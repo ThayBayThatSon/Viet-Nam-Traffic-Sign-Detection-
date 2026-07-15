@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Traffic Sign Recognition</title>
+    <!-- Thêm font chữ hiện đại Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    
+    <!-- Background Decorators cho phong cách Glassmorphism -->
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+
+    <div class="container">
+        
+        <header>
+            <h1>YOLOv8 <span class="highlight">Vision</span></h1>
+        </header>
+
+        <main class="app-layout">
+            
+            <!-- Khu vực tải ảnh -->
+            <section class="glass-panel upload-section">
+                <h2>1. Tải ảnh lên</h2>
+                <div class="drop-zone" id="drop-zone">
+                    <input type="file" id="file-input" accept="image/*" hidden>
+                    <div class="drop-content">
+                        <div class="icon">📁</div>
+                        <h3>Kéo thả ảnh vào đây</h3>
+                        <p>hoặc <span>Click để chọn file</span></p>
+                    </div>
+                </div>
+                <!-- Ảnh preview (ẩn mặc định) -->
+                <div class="preview-container" id="preview-container" style="display: none;">
+                    <img id="preview-img" src="" alt="Preview">
+                    <button class="btn-primary" id="btn-predict">Chạy Mô Hình Phân Tích</button>
+                    <button class="btn-text" id="btn-cancel">Hủy</button>
+                </div>
+            </section>
+
+            <!-- Khu vực hiển thị kết quả -->
+            <section class="glass-panel result-section">
+                <h2>2. Kết quả Phân tích</h2>
+                
+                <div class="result-display" id="result-display">
+                    <!-- Trạng thái chờ -->
+                    <div class="placeholder" id="result-placeholder">
+                        <div class="radar-scan"></div>
+                        <p>Đang chờ hình ảnh đầu vào...</p>
+                    </div>
+                    
+                    <!-- Trạng thái Loading -->
+                    <div class="loading" id="loading" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>AI đang phân tích từng pixel...</p>
+                    </div>
+
+                    <!-- Ảnh kết quả -->
+                    <img id="result-img" src="" alt="Kết quả nhận diện" style="display: none;">
+                </div>
+
+                <!-- Bảng thống kê chi tiết -->
+                <div class="stats-panel" id="stats-panel" style="display: none;">
+                    <h3>Thống kê Phát hiện</h3>
+                    <ul id="detections-list">
+                        <!-- Chèn bằng Javascript -->
+                    </ul>
+                </div>
+            </section>
+
+        </main>
+
+    </div>
+
+    <!-- Modal phóng to ảnh -->
+    <div id="image-modal" class="modal">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modal-img">
+    </div>
+
+    <!-- Script tương tác -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Traffic Sign Recognition - YOLOv8</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0b1120;
+            --primary: #38bdf8;
+            --secondary: #fbbf24;
+            --accent: #818cf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            overflow: hidden;
+        }
+
+        /* Container chứa tất cả slide */
+        .slide-container {
+            display: flex;
+            width: 1400vw; /* 14 slides = 14 * 100vw */
+            height: 100vh;
+            transition: transform 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        /* Định dạng từng Slide */
+        .slide {
+            width: 100vw;
+            height: 100vh;
+            padding: 50px 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 4.5rem;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h2 {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 30px;
+        }
+
+        h3 {
+            font-size: 2rem;
+            color: var(--secondary);
+            margin-bottom: 15px;
+        }
+
+        p, li {
+            font-size: 1.5rem;
+            line-height: 1.6;
+            color: var(--text-main);
+            margin-bottom: 15px;
+        }
+
+        ul {
+            text-align: left;
+            margin-left: 40px;
+        }
+
+        .highlight-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            margin: 20px;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .row {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 500px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .zoom-img {
+            transition: transform 0.4s ease;
+            cursor: zoom-in;
+            position: relative;
+            z-index: 50;
+        }
+
+        .zoom-img:hover {
+            transform: scale(2.2);
+            z-index: 999;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            border: 2px solid var(--primary);
+        }
+
+        .zoom-cm:hover {
+            transform: scale(2.2) translateX(10%);
+            z-index: 999;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+            border: 2px solid var(--primary);
+        }
+
+        /* Điều hướng */
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            right: 50px;
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        button {
+            background: rgba(56, 189, 248, 0.2);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Indicator */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(to right, var(--primary), var(--accent));
+            width: 7.14%; /* 1/14 */
+            transition: width 0.3s;
+            z-index: 100;
+        }
+
+        /* Glassmorphism Background elements */
+        .glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(56,189,248,0.15) 0%, rgba(11,17,32,0) 70%);
+            top: -200px;
+            left: -200px;
+            border-radius: 50%;
+            z-index: -1;
+        }
+        .glow-2 {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(129,140,248,0.15) 0%, rgba(11,17,32,0) 70%);
+            bottom: -150px;
+            right: -150px;
+            border-radius: 50%;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glow"></div>
+    <div class="glow-2"></div>
+    <div class="progress-bar" id="progress"></div>
+
+    <div class="slide-container" id="slideTrack">
+        
+        <!-- SLIDE 1: TRANG BÌA -->
+        <div class="slide">
+            <h1>Vietnamese Traffic Sign Recognition</h1>
+            <h3 style="color: var(--primary); font-size: 2.5rem; margin-bottom: 40px;">Using YOLOv8 Algorithm</h3>
+            <div class="highlight-box" style="background: transparent; border: none; box-shadow: none;">
+                <h3 style="color: var(--primary); margin-bottom: 20px;">Group 1</h3>
+                <ul style="list-style: none; padding: 0; margin: 0; text-align: center; font-size: 1.3rem;">
+                    <li>Trần Thanh Vũ – SE200433</li>
+                    <li>Tạ Nguyễn Anh Minh – SE200416</li>
+                    <li>Trịnh Quốc Sang – SE194517</li>
+                    <li>Lê Thanh Khang – SE200637</li>
+                    <li>Phạm Nguyễn Khánh Nguyên – SE200641</li>
+                    <li>Nguyễn Thị Thanh Tiên – SE204853</li>
+                </ul>
+            </div>
+            <p style="margin-top: 50px; color: var(--text-muted); font-size: 1.2rem;">(Use Left/Right arrow keys to navigate)</p>
+        </div>
+
+        <!-- SLIDE 2: ĐẶT VẤN ĐỀ -->
+        <div class="slide">
+            <h2>1. Problem Statement</h2>
+            <div class="row">
+                <div class="highlight-box" style="text-align: left;">
+                    <h3 style="color: var(--accent);">Why this topic?</h3>
+                    <ul>
+                        <li>Complex traffic conditions where drivers easily miss signs, leading to violations.</li>
+                        <li>High demand for Advanced Driver Assistance Systems (ADAS) and Autonomous Vehicles.</li>
+                        <li>Minimizing traffic accidents through early warnings.</li>
+                    </ul>
+                </div>
+                <div class="highlight-box" style="text-align: left;">
+                    <h3 style="color: var(--secondary);">Current Challenges</h3>
+                    <ul>
+                        <li>Traffic signs in Vietnam are diverse with various shapes.</li>
+                        <li>Often obscured by trees or affected by poor lighting/weather.</li>
+                        <li>Requires an extremely fast recognition algorithm (Real-time).</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: DATASET -->
+        <div class="slide" style="padding-top: 20px;">
+            <h2>2. Dataset Overview</h2>
+            <p style="color: var(--text-muted); margin-bottom: 10px;">Source: <a href="https://www.kaggle.com/datasets/maitam/vietnamese-traffic-signs" target="_blank" style="color: var(--accent); text-decoration: none;">Kaggle - Vietnamese Traffic Signs</a></p>
+            
+            <div class="row" style="margin-bottom: 10px; gap: 20px;">
+                <div class="highlight-box" style="padding: 10px 20px; margin: 0;">
+                    <h2 style="color: var(--primary); margin: 0; font-size: 2.5rem;">3,191</h2>
+                    <p style="margin-top: 5px; font-size: 1.1rem; margin-bottom: 0;">Total Images</p>
+                </div>
+                <div class="highlight-box" style="padding: 10px 20px; margin: 0;">
+                    <h2 style="color: var(--secondary); margin: 0; font-size: 2.5rem;">52</h2>
+                    <p style="margin-top: 5px; font-size: 1.1rem; margin-bottom: 0;">Traffic Sign Classes</p>
+                </div>
+                <div class="highlight-box" style="padding: 10px 20px; margin: 0;">
+                    <h2 style="color: var(--accent); margin: 0; font-size: 2.5rem;">8,334</h2>
+                    <p style="margin-top: 5px; font-size: 1.1rem; margin-bottom: 0;">Total Bounding Boxes</p>
+                </div>
+            </div>
+            
+            <div class="table-container" style="width: 100%; max-width: 1000px; max-height: 400px; overflow-y: auto; background: rgba(255,255,255,0.05); border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); margin-top: 10px;">
+                <style>
+                    .dataset-table { width: 100%; border-collapse: collapse; text-align: left; }
+                    .dataset-table th { padding: 12px 15px; color: var(--primary); position: sticky; top: 0; background: #1e293b; z-index: 10; border-bottom: 1px solid rgba(255,255,255,0.1); }
+                    .dataset-table td { padding: 8px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 1.1rem; }
+                    .dataset-table tr:hover { background: rgba(255,255,255,0.05); }
+                    .table-container::-webkit-scrollbar { width: 8px; }
+                    .table-container::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 10px; }
+                    .table-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+                    .table-container::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+                </style>
+                <table class="dataset-table">
+                    <thead>
+                        <tr>
+                            <th>Class ID</th>
+                            <th>Class Name (Vietnamese)</th>
+                            <th>Bounding Box Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>0</td><td>W.224 – Đường người đi bộ cắt ngang</td><td>312</td></tr>
+                        <tr><td>1</td><td>W.205c – Đường giao nhau (ngã ba bên phải)</td><td>22</td></tr>
+                        <tr><td>2</td><td>P.102 – Cấm đi ngược chiều</td><td>470</td></tr>
+                        <tr><td>3</td><td>R.302a – Phải đi vòng sang bên phải</td><td>454</td></tr>
+                        <tr><td>4</td><td>W.205a – Giao nhau với đường đồng cấp</td><td>33</td></tr>
+                        <tr><td>5</td><td>W.207 – Giao nhau với đường không ưu tiên</td><td>256</td></tr>
+                        <tr><td>6</td><td>W.201a – Chỗ ngoặt nguy hiểm vòng bên trái</td><td>182</td></tr>
+                        <tr><td>7</td><td>P.123a – Cấm rẽ trái</td><td>247</td></tr>
+                        <tr><td>8</td><td>I.434a – Bến xe buýt</td><td>213</td></tr>
+                        <tr><td>9</td><td>R.303 – Nơi giao nhau chạy theo vòng xuyến</td><td>43</td></tr>
+                        <tr><td>10</td><td>P.130 – Cấm dừng và đỗ xe</td><td>1071</td></tr>
+                        <tr><td>11</td><td>I.409 – Chỗ quay xe</td><td>26</td></tr>
+                        <tr><td>12</td><td>R.415a – Biển gộp làn đường theo phương tiện</td><td>280</td></tr>
+                        <tr><td>13</td><td>W.245a – Đi chậm</td><td>372</td></tr>
+                        <tr><td>14</td><td>P.106a*Xe tải – Cấm xe tải</td><td>85</td></tr>
+                        <tr><td>15</td><td>W.203c – Đường bị thu hẹp về phía phải</td><td>29</td></tr>
+                        <tr><td>16</td><td>P.117* – Giới hạn chiều cao</td><td>73</td></tr>
+                        <tr><td>17</td><td>P.124a* – Cấm quay đầu</td><td>105</td></tr>
+                        <tr><td>18</td><td>P.107 – Cấm ô tô khách và ô tô tải</td><td>214</td></tr>
+                        <tr><td>19</td><td>P.124d – Cấm rẽ phải và quay đầu</td><td>29</td></tr>
+                        <tr><td>20</td><td>P.103a – Cấm ô tô</td><td>52</td></tr>
+                        <tr><td>21</td><td>W.203b – Đường bị thu hẹp về phía trái</td><td>11</td></tr>
+                        <tr><td>22</td><td>W.221b – Gồ giảm tốc phía trước</td><td>131</td></tr>
+                        <tr><td>23</td><td>P.111 – Cấm xe hai và ba bánh</td><td>465</td></tr>
+                        <tr><td>24</td><td>P.129 – Kiểm tra</td><td>56</td></tr>
+                        <tr><td>25</td><td>S.505aXe máy – Chỉ dành cho xe máy</td><td>25</td></tr>
+                        <tr><td>26</td><td>W.246a – Chướng ngoại vật phía trước</td><td>80</td></tr>
+                        <tr><td>27</td><td>W.225 – Trẻ em</td><td>36</td></tr>
+                        <tr><td>28</td><td>S.505aXe tải và công – Xe tải và xe công</td><td>27</td></tr>
+                        <tr><td>29</td><td>P.104 – Cấm mô tô và xe máy</td><td>45</td></tr>
+                        <tr><td>30</td><td>S.505aXe tải – Chỉ dành cho xe tải</td><td>138</td></tr>
+                        <tr><td>31</td><td>Camera – Đường có camera giám sát</td><td>38</td></tr>
+                        <tr><td>32</td><td>P.123b – Cấm rẽ phải</td><td>186</td></tr>
+                        <tr><td>33</td><td>W.202b – Nhiều chỗ ngoặt nguy hiểm liên tiếp, chỗ đầu tiên sang phải</td><td>19</td></tr>
+                        <tr><td>34</td><td>B.8a – Cấm xe sơ-mi rơ-moóc</td><td>82</td></tr>
+                        <tr><td>35</td><td>P.137 – Cấm rẽ trái và phải</td><td>87</td></tr>
+                        <tr><td>36</td><td>P.139 – Cấm đi thẳng và rẽ phải</td><td>75</td></tr>
+                        <tr><td>37</td><td>W.205b – Đường giao nhau (ngã ba bên trái)</td><td>47</td></tr>
+                        <tr><td>38</td><td>P.127*50 – Giới hạn tốc độ (50km/h)</td><td>189</td></tr>
+                        <tr><td>39</td><td>P.127*60 – Giới hạn tốc độ (60km/h)</td><td>459</td></tr>
+                        <tr><td>40</td><td>P.127*80 – Giới hạn tốc độ (80km/h)</td><td>210</td></tr>
+                        <tr><td>41</td><td>P.127*40 – Giới hạn tốc độ (40km/h)</td><td>275</td></tr>
+                        <tr><td>42</td><td>R.301e – Các xe chỉ được rẽ trái</td><td>21</td></tr>
+                        <tr><td>43</td><td>W.239b* – Chiều cao tĩnh không thực tế</td><td>27</td></tr>
+                        <tr><td>44</td><td>W.233 – Nguy hiểm khác</td><td>3</td></tr>
+                        <tr><td>45</td><td>I.407a – Đường một chiều</td><td>195</td></tr>
+                        <tr><td>46</td><td>P.131a – Cấm đỗ xe</td><td>435</td></tr>
+                        <tr><td>47</td><td>P.124b1 – Cấm ô tô quay đầu xe (được rẽ trái)</td><td>16</td></tr>
+                        <tr><td>48</td><td>W.210 – Giao nhau với đường sắt có rào chắn</td><td>41</td></tr>
+                        <tr><td>49</td><td>P.124c – Cấm rẽ trái và quay đầu xe</td><td>221</td></tr>
+                        <tr><td>50</td><td>W.201b – Chỗ ngoặt nguy hiểm vòng bên phải</td><td>121</td></tr>
+                        <tr><td>51</td><td>W.246c – Chú ý chướng ngại vật – vòng tránh sang bên phải</td><td>5</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- SLIDE 3.1: DATASET SAMPLES -->
+        <div class="slide">
+            <h2>2.1 Dataset Samples</h2>
+            <p style="color: var(--text-muted); margin-bottom: 30px;">A glimpse into the diverse traffic sign data.</p>
+            <div class="highlight-box" style="max-width: 1000px; padding: 20px;">
+                <img src="assets/dataset.png" alt="Dataset Samples" class="zoom-img" style="max-height: 600px; width: 100%; object-fit: contain; background: rgba(255,255,255,0.1); padding: 10px;">
+            </div>
+        </div>
+
+        <!-- SLIDE 4: CÔNG NGHỆ -->
+        <div class="slide">
+            <h2>3. Technology & Algorithm</h2>
+            <div class="highlight-box" style="text-align: left;">
+                <h3 style="text-align: center; margin-bottom: 20px;">YOLOv8n Model (Nano Version)</h3>
+                <ul>
+                    <li>A State-of-the-art Convolutional Neural Network (CNN) architecture for Object Detection.</li>
+                    <li><strong>Major Advantage:</strong> Extremely fast recognition by scanning the image only once.</li>
+                    <li><strong>Version Choice:</strong> We chose <strong>YOLOv8n (Nano)</strong> as it is perfectly suited for deployment on low-power real-time edge devices (e.g., Dashcams).</li>
+                    <li>Tools used: Python, PyTorch, Ultralytics.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- SLIDE 4.1: CHI TIẾT VỀ YOLO -->
+        <div class="slide">
+            <h2>3.1 Why we chose YOLOv8</h2>
+            <div class="row" style="align-items: stretch; max-width: 1400px; gap: 30px;">
+                <div style="flex: 1.2; display: flex; flex-direction: column; gap: 20px;">
+                    <div class="highlight-box" style="margin: 0; text-align: left; height: 100%;">
+                        <h3 style="color: #4ade80;">Key Advantages</h3>
+                        <ul>
+                            <li><strong>Super Fast (Real-time):</strong> It processes video frames instantly, which is crucial for dashcams and self-driving cars to warn drivers on time.</li>
+                            <li><strong>Highly Accurate:</strong> It is exceptionally good at finding small, blurry, or far-away traffic signs in complex environments.</li>
+                            <li><strong>Lightweight:</strong> It doesn't require a supercomputer. It can run directly on simple devices inside a car.</li>
+                        </ul>
+                    </div>
+                    <div class="highlight-box" style="margin: 0; text-align: left; height: 100%;">
+                        <h3 style="color: var(--accent);">How does it work? (Simply put)</h3>
+                        <ul>
+                            <li><strong>You Only Look Once:</strong> Instead of scanning the image piece by piece, the AI looks at the whole image at once, drastically reducing processing time.</li>
+                            <li><strong>Learning by Seeing:</strong> We provided it with over 3,000 photos of Vietnamese streets. The AI learned the unique shapes and colors of our signs to detect them automatically.</li>
+                        </ul>
+                    </div>
+                </div>
+                <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+                    <img src="assets/yolov8-object-detection.webp" alt="YOLOv8 Detection" class="zoom-img" style="max-height: 500px; width: 100%; object-fit: contain; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,255,255,0.1);">
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: HUẤN LUYỆN -->
+        <div class="slide">
+            <h2>4. Training Process</h2>
+            <div class="row">
+                <div style="flex: 1; text-align: left;">
+                    <ul>
+                        <li><strong>Epochs:</strong> 50</li>
+                        <li><strong>Environment:</strong> Google Colab (GPU)</li>
+                    </ul>
+                    <p style="margin-top: 20px; font-size: 1.2rem;">*The Loss charts indicate that the model learned very well. The loss curves decrease steadily and converge properly between Train and Validation sets, showing no signs of Overfitting.</p>
+                </div>
+                <div style="flex: 1.5;">
+                    <img src="runs/detect/traffic_sign_model/results.png" alt="Loss Charts">
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: KẾT QUẢ ĐÁNH GIÁ & CONFUSION MATRIX -->
+        <div class="slide">
+            <h2>5. Evaluation Metrics & Confusion Matrix</h2>
+            <div class="row" style="align-items: stretch; max-width: 1400px; gap: 30px;">
+                
+                <!-- Cột trái: Metrics -->
+                <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="highlight-box" style="margin: 0; padding: 20px; text-align: center;">
+                            <h1 style="color: var(--primary); font-size: 3rem; margin-bottom: 0;">97.68%</h1>
+                            <h3 style="color: white; margin-top: 5px; font-size: 1.5rem;">mAP@50</h3>
+                        </div>
+                        <div class="highlight-box" style="margin: 0; padding: 20px; text-align: center;">
+                            <h1 style="color: #4ade80; font-size: 3rem; margin-bottom: 0;">73.27%</h1>
+                            <h3 style="color: white; margin-top: 5px; font-size: 1.5rem;">mAP@50-95</h3>
+                        </div>
+                        <div class="highlight-box" style="margin: 0; padding: 20px; text-align: center;">
+                            <h1 style="color: var(--secondary); font-size: 3rem; margin-bottom: 0;">96.94%</h1>
+                            <h3 style="color: white; margin-top: 5px; font-size: 1.5rem;">Recall</h3>
+                            <p style="color: var(--text-muted); font-size: 1rem; margin:0;">TP / (TP + FN)</p>
+                        </div>
+                        <div class="highlight-box" style="margin: 0; padding: 20px; text-align: center;">
+                            <h1 style="color: var(--accent); font-size: 3rem; margin-bottom: 0;">89.16%</h1>
+                            <h3 style="color: white; margin-top: 5px; font-size: 1.5rem;">Precision</h3>
+                            <p style="color: var(--text-muted); font-size: 1rem; margin:0;">TP / (TP + FP)</p>
+                        </div>
+                    </div>
+                    <p style="color: var(--text-muted); margin-top: 20px; font-size: 1.1rem; text-align: center;">*The formulas show how Precision and Recall are calculated based on the Confusion Matrix.</p>
+                </div>
+
+                <!-- Cột phải: Confusion Matrix -->
+                <div class="highlight-box" style="flex: 1.2; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <img src="runs/detect/traffic_sign_model/simple_cm.png" alt="Confusion Matrix" class="zoom-img zoom-cm" style="max-height: 280px; background: white; margin-bottom: 20px; border-radius: 10px;">
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; width: 100%;">
+                        <div style="grid-column: 1 / -1;">
+                            <strong style="color:#4ade80; font-size: 1.1rem;">True Positive (TP)</strong>
+                            <p style="font-size: 1rem; margin: 0; color: var(--text-main);">Correctly detected a sign.</p>
+                        </div>
+                        <div>
+                            <strong style="color:#f87171; font-size: 1.1rem;">False Positive (FP)</strong>
+                            <p style="font-size: 1rem; margin: 0; color: var(--text-main);">False alarm (Background as sign).</p>
+                        </div>
+                        <div>
+                            <strong style="color:#fbbf24; font-size: 1.1rem;">False Negative (FN)</strong>
+                            <p style="font-size: 1rem; margin: 0; color: var(--text-main);">Missed a real traffic sign.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: HÌNH ẢNH KẾT QUẢ -->
+        <div class="slide">
+            <h2>6. Visual Inference Results</h2>
+            <p style="margin-bottom: 20px;">Some prediction results (Bounding Box & Confidence Score) on the Validation set<br><span style="color:var(--text-muted); font-size:1.1rem;">(Hover over any image to zoom in / Rê chuột vào ảnh để phóng to)</span></p>
+            <div class="row">
+                <div style="flex: 1; text-align: right;">
+                    <img src="runs/detect/traffic_sign_model/val_batch0_pred.jpg" alt="Inference Result 1" class="zoom-img" style="max-height: 520px; transform-origin: left center;">
+                </div>
+                <div style="flex: 1; text-align: left;">
+                    <img src="runs/detect/traffic_sign_model/val_batch1_pred.jpg" alt="Inference Result 2" class="zoom-img" style="max-height: 520px; transform-origin: right center;">
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: REAL-WORLD PRECISION -->
+        <div class="slide">
+            <h2>6.1 Visual Inference (Zoomed Detail)</h2>
+            <p style="margin-bottom: 20px;">Model precision on an actual image from the raw dataset (archive).</p>
+            <div class="row" style="margin-top: 20px; align-items: stretch; max-width: 1200px;">
+                <!-- Column 1: Original Raw Data -->
+                <div class="highlight-box" style="text-align: center; flex: 1; padding: 15px;">
+                    <h3 style="color: var(--text-muted); margin-bottom: 10px;">Original Raw Data</h3>
+                    <img src="runs/detect/real_inference/original.jpg" alt="Original Image" class="zoom-img" style="max-height: 250px; border-radius: 5px;">
+                    <p style="font-size: 1.1rem; color: var(--text-muted); margin-top: 10px;">0072.jpg (archive)</p>
+                </div>
+                
+                <!-- Column 2: Full Model Prediction -->
+                <div class="highlight-box" style="text-align: center; flex: 1; padding: 15px;">
+                    <h3 style="color: var(--accent); margin-bottom: 10px;">Full Model Result</h3>
+                    <img src="runs/detect/real_inference/pred.jpg" alt="Predicted Image" class="zoom-img" style="max-height: 250px; border-radius: 5px;">
+                    <p style="font-size: 1.1rem; color: var(--text-muted); margin-top: 10px;">Bounding Boxes Drawn</p>
+                </div>
+
+                <!-- Column 3: Inference Crops -->
+                <div class="highlight-box" style="text-align: center; flex: 1.4; padding: 15px;">
+                    <h3 style="color: #4ade80; margin-bottom: 10px;">Model Inference Crops</h3>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+                        <img src="runs/detect/real_inference/crop_0.jpg" alt="Crop 1" class="zoom-img" style="max-height: 120px; border-radius: 5px;">
+                        <img src="runs/detect/real_inference/crop_1.jpg" alt="Crop 2" class="zoom-img" style="max-height: 120px; border-radius: 5px;">
+                    </div>
+                    <div style="text-align: left; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px;">
+                        <p><strong>Predicted Classes:</strong></p>
+                        <ul style="color: var(--text-main); margin-top: 10px; padding-left: 20px; font-size: 1rem;">
+                            <li style="margin-bottom: 5px;"><strong style="color: #60a5fa;">ID: 49</strong> – P.124c – Cấm rẽ trái và quay đầu xe</li>
+                            <li><strong style="color: #60a5fa;">ID: 49</strong> – P.124c – Cấm rẽ trái và quay đầu xe</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <p style="margin-top: 20px; color: #fbbf24; font-size: 1.2rem;"><strong>Conclusion:</strong> The model accurately isolates and classifies multiple distinct traffic signs within a single raw image, mapping perfectly to the dataset definitions.</p>
+        </div>
+
+        <!-- SLIDE 9.2: REAL-WORLD PRECISION 2 -->
+        <div class="slide">
+            <h2>6.2 Visual Inference (More Results)</h2>
+            <p style="margin-bottom: 20px;">Another example of model precision in challenging conditions (small objects / complex background).</p>
+            <div class="row" style="margin-top: 20px; align-items: stretch; max-width: 1200px;">
+                <!-- Column 1: Original Raw Data -->
+                <div class="highlight-box" style="text-align: center; flex: 1; padding: 15px;">
+                    <h3 style="color: var(--text-muted); margin-bottom: 10px;">Original Raw Data</h3>
+                    <img src="runs/detect/real_inference/original_2.jpg" alt="Original Image" class="zoom-img" style="max-height: 250px; border-radius: 5px;">
+                    <p style="font-size: 1.1rem; color: var(--text-muted); margin-top: 10px;">0104.jpg (archive)</p>
+                </div>
+                
+                <!-- Column 2: Full Model Prediction -->
+                <div class="highlight-box" style="text-align: center; flex: 1; padding: 15px;">
+                    <h3 style="color: var(--accent); margin-bottom: 10px;">Full Model Result</h3>
+                    <img src="runs/detect/real_inference/pred_2.jpg" alt="Predicted Image" class="zoom-img" style="max-height: 250px; border-radius: 5px;">
+                    <p style="font-size: 1.1rem; color: var(--text-muted); margin-top: 10px;">Bounding Boxes Drawn</p>
+                </div>
+
+                <!-- Column 3: Inference Crops -->
+                <div class="highlight-box" style="text-align: center; flex: 1.4; padding: 15px;">
+                    <h3 style="color: #4ade80; margin-bottom: 10px;">Model Inference Crops</h3>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+                        <img src="runs/detect/real_inference/crop_3.jpg" alt="Crop 1" class="zoom-img" style="max-height: 120px; border-radius: 5px;">
+                        <img src="runs/detect/real_inference/crop_4.jpg" alt="Crop 2" class="zoom-img" style="max-height: 120px; border-radius: 5px;">
+                    </div>
+                    <div style="text-align: left; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px;">
+                        <p><strong>Predicted Classes:</strong></p>
+                        <ul style="color: var(--text-main); margin-top: 10px; padding-left: 20px; font-size: 1rem;">
+                            <li style="margin-bottom: 5px;"><strong style="color: #60a5fa;">ID: 7</strong> – P.123a – Cấm rẽ trái</li>
+                            <li><strong style="color: #60a5fa;">ID: 4</strong> – W.205a – Giao nhau với đường đồng cấp</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <p style="margin-top: 20px; color: #fbbf24; font-size: 1.2rem;"><strong>Conclusion:</strong> The model successfully differentiates and localizes multiple complex sign types in a real-world scenario.</p>
+        </div>
+
+        <!-- SLIDE 10: DEMO -->
+        <div class="slide">
+            <h2>7. Live Demo</h2>
+            <p style="margin-bottom: 30px;">The system has been integrated into a fully functional Web App.</p>
+            <div class="highlight-box">
+                <h1 style="font-size: 5rem; margin-bottom: 20px;">🚀</h1>
+                <h3>Ready for Real-world Image Recognition</h3>
+                <p style="font-size: 1.2rem; margin-top: 20px;">*Please test the live demo on our Web App (http://localhost:5000)*</p>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: HẠN CHẾ & HƯỚNG PHÁT TRIỂN -->
+        <div class="slide">
+            <h2>8. Limitations & Future Work</h2>
+            <div class="row">
+                <div class="highlight-box" style="text-align: left;">
+                    <h3 style="color: #f87171;">Limitations</h3>
+                    <ul>
+                        <li><strong>Dataset Class Imbalance:</strong> Some signs have 1000+ images while others have < 10, reducing accuracy for rare signs.</li>
+                        <li>Photos taken at night, in severe low-light conditions, or with intense headlight glare can reduce accuracy.</li>
+                        <li>Physically deformed signs or signs obscured by trees more than 80%.</li>
+                    </ul>
+                </div>
+                <div class="highlight-box" style="text-align: left;">
+                    <h3 style="color: #4ade80;">Future Work</h3>
+                    <ul>
+                        <li>Address data imbalance by collecting more data for rare classes (Data Augmentation).</li>
+                        <li>Deploy directly onto embedded Dashcams (e.g., Raspberry Pi/Jetson Nano).</li>
+                        <li>Integrate a Voice Alert system for drivers.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 12: LỜI CẢM ƠN -->
+        <div class="slide">
+            <h1 style="font-size: 6rem;">Thank You!</h1>
+            <h3 style="margin-top: 20px;">Thank you for your time and attention.</h3>
+            
+            <div class="highlight-box" style="margin-top: 50px; display: inline-block; width: auto;">
+                <h2 style="color: white; margin: 0;">Q & A</h2>
+                <p style="margin: 0; color: var(--primary);">Questions & Answers</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Nút điều hướng -->
+    <div class="controls">
+        <button id="prevBtn">❮ Previous</button>
+        <button id="nextBtn">Next ❯</button>
+    </div>
+
+    <script>
+        const slideTrack = document.getElementById('slideTrack');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const progressBar = document.getElementById('progress');
+        const totalSlides = 14;
+        let currentSlide = 0;
+
+        function updateSlide() {
+            slideTrack.style.transform = `translateX(-${currentSlide * 100}vw)`;
+            // Update progress bar (tính theo %)
+            const progress = ((currentSlide + 1) / totalSlides) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        nextBtn.addEventListener('click', () => {
+            if (currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlide();
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        });
+
+        // Hỗ trợ phím mũi tên
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' && currentSlide < totalSlides - 1) {
+                currentSlide++;
+                updateSlide();
+            } else if (e.key === 'ArrowLeft' && currentSlide > 0) {
+                currentSlide--;
+                updateSlide();
+            }
+        });
+    </script>
+</body>
+</html>

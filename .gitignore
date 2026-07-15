@@ -1,0 +1,32 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# Environment variables
+.env
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyTorch / Models (except our specific small final model if needed)
+# *.pt
+# *.pth
+
+# Data and Logs
+data/archive/
+runs/
+*.log
+
+# IDEs
+.vscode/
+.idea/
+
+# Large generated files
+presentation_to_share.zip
