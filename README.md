@@ -64,9 +64,11 @@ pip install -r requirements.txt
 The Web App allows you to upload an image from your computer and receive the predicted traffic signs drawn directly on the image.
 
 To start the web server, run:
+
 ```bash
 python app.py
 ```
+
 Open your web browser and navigate to `http://localhost:5000` (or the URL provided in the terminal).
 
 #### 🖥️ Desktop Application (Screen Capture)
@@ -74,10 +76,13 @@ Open your web browser and navigate to `http://localhost:5000` (or the URL provid
 The Desktop App creates a live view of your screen's center. This is highly useful for detecting signs on a driving video playing on your screen.
 
 To launch the desktop capture tool, run:
+
 ```bash
 python desktop_app.py
 ```
+
 **Controls:**
+
 - **`c`**: Capture the current frame and run YOLOv8 detection.
 - **`q`**: Quit the application.
 - *Any key*: Return to live view after a capture.
@@ -86,6 +91,7 @@ python desktop_app.py
 ## 🧠 Model Training
 
 The model was trained using the Ultralytics YOLOv8 framework. If you wish to retrain or fine-tune the model:
+
 1. Ensure your dataset is correctly formatted in the YOLO format and placed inside the `data/` folder.
 2. Refer to the resources in the `scripts/` or `notebooks/` directory to start the training pipeline.
 3. The new weights will be saved in `runs/detect/train/weights/best.pt`. Update the path in `app.py` and `desktop_app.py` if necessary.
